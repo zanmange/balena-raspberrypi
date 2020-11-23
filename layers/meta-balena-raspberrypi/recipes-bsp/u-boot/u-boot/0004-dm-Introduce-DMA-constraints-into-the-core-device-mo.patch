@@ -1,0 +1,67 @@
+From 513bdbe9cea111bfee6c9784319eaa17cc46d1e3 Mon Sep 17 00:00:00 2001
+From: Alexandru Costache <alexandru@balena.io>
+Date: Mon, 23 Nov 2020 16:39:07 +0100
+Subject: [PATCH 4/9] dm: Introduce DMA constraints into the core device model
+
+Calculating the DMA offset between a bus address space and CPU's every
+time we call phys_to_bus() and bus_to_phys() isn't ideal performance
+wise. This information is static and available before initializing the
+devices so parse it before the probe call an provide the DMA offset it
+in 'struct udevice' for the DMA code to use it.
+
+Upstream-status: Inappropriate [configuration]
+Signed-off-by: Nicolas Saenz Julienne <nsaenzjulienne@suse.de>
+Signed-off-by: Alexandru Costache <alexandru@balena.io>
+---
+ drivers/core/device.c | 22 ++++++++++++++++++++++
+ include/dm/device.h   |  1 +
+ 2 files changed, 23 insertions(+)
+
+diff --git a/drivers/core/device.c b/drivers/core/device.c
+index 476133f172..fa0d105952 100644
+--- a/drivers/core/device.c
++++ b/drivers/core/device.c
+@@ -401,6 +401,28 @@ fail:
+ 	return ret;
+ }
+ 
++void device_get_dma_constraints(struct udevice *dev)
++{
++	phys_addr_t cpu;
++	dma_addr_t bus;
++	u64 size;
++	int ret;
++
++	if (!dev_of_valid(dev))
++		return;
++
++	ret = dev_get_dma_range(dev, &cpu, &bus, &size);
++	if (ret) {
++		/* Don't complain if no 'dma-ranges' were found */
++		if (ret != -ENODEV)
++			dm_warn("%s: failed to get DMA range, %d\n",
++				dev->name, ret);
++		return;
++	}
++
++	dev->dma_offset = cpu - bus;
++}
++
+ int device_probe(struct udevice *dev)
+ {
+ 	const struct driver *drv;
+diff --git a/include/dm/device.h b/include/dm/device.h
+index 953706cf52..6489f7ae61 100644
+--- a/include/dm/device.h
++++ b/include/dm/device.h
+@@ -161,6 +161,7 @@ struct udevice {
+ #ifdef CONFIG_DEVRES
+ 	struct list_head devres_head;
+ #endif
++	u64 dma_offset;
+ };
+ 
+ /* Maximum sequence number supported */
+-- 
+2.17.1
+

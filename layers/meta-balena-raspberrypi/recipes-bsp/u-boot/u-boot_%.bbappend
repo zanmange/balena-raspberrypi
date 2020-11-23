@@ -65,6 +65,17 @@ SRC_URI_remove_raspberrypi4-64 = "${UBOOT_RPI4_SUPPORT_PATCHES}"
 SRC_URI_append_raspberrypi4-64 = " \
     file://Revert-remove-include-config_defaults.h.patch \
     file://rpi4-include-configs-Use-config-defaults.patch \
+    file://0001-rpi-Add-rpi-400-model-to-known-types.patch \
+    file://0001-pi-Add-identifier-for-the-new-CM4.patch \
+    file://0001-usb-xhci-Add-virt_to_phys-to-support-mapped-platform.patch \
+    file://0002-pci-pcie-brcmstb-Fix-inbound-window-configurations.patch \
+    file://0003-dm-Introduce-xxx_get_dma_range.patch \
+    file://0004-dm-Introduce-DMA-constraints-into-the-core-device-mo.patch \
+    file://0005-dm-Introduce-dev_phys_to_bus-dev_bus_to_phys.patch \
+    file://0006-usb-xhci-Add-missing-endian-conversions-cpu_to_leXX.patch \
+    file://0007-usb-xhci-Add-virt_to_phys-to-support-mapped-platform.patch \
+    file://0008-xhci-translate-virtual-addresses-into-the-bus-s-addr.patch \
+    file://0009-mmc-Introduce-mmc_phys_to_bus-mmc_bus_to_phys.patch \
 "
 
 # In production builds enable_uart is not set, and this makes
