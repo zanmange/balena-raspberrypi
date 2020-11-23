@@ -1,0 +1,69 @@
+From d0bda9f63a071a1119423108e6866f44be5330dc Mon Sep 17 00:00:00 2001
+From: Alexandru Costache <alexandru@balena.io>
+Date: Mon, 23 Nov 2020 17:36:35 +0100
+Subject: [PATCH 9/9] mmc: Introduce mmc_phys_to_bus()/mmc_bus_to_phys()
+
+This will allow us to use DM variants of phys_to_bus()/bus_to_phys()
+when relevant.
+
+Upstream-status: Inappropriate [backport]
+Signed-off-by: Nicolas Saenz Julienne <nsaenzjulienne@suse.de>
+Signed-off-by: Alexandru Costache <alexandru@balena.io>
+---
+ drivers/mmc/sdhci.c | 7 ++++---
+ include/mmc.h       | 9 +++++++++
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mmc/sdhci.c b/drivers/mmc/sdhci.c
+index f4eb655f6e..cfc66788a8 100644
+--- a/drivers/mmc/sdhci.c
++++ b/drivers/mmc/sdhci.c
+@@ -20,7 +20,6 @@
+ #include <linux/bitops.h>
+ #include <linux/delay.h>
+ #include <linux/dma-mapping.h>
+-#include <phys2bus.h>
+ 
+ static void sdhci_reset(struct sdhci_host *host, u8 mask)
+ {
+@@ -155,7 +154,8 @@ static void sdhci_prepare_dma(struct sdhci_host *host, struct mmc_data *data,
+ 					  mmc_get_dma_dir(data));
+ 
+ 	if (host->flags & USE_SDMA) {
+-		sdhci_writel(host, phys_to_bus((ulong)host->start_addr),
++		sdhci_writel(host, 
++			      mmc_phys_to_bus(host->mmc, (ulong)host->start_addr),
+ 				SDHCI_DMA_ADDRESS);
+ 	} else if (host->flags & (USE_ADMA | USE_ADMA64)) {
+ 		sdhci_prepare_adma_table(host, data);
+@@ -210,7 +210,8 @@ static int sdhci_transfer_data(struct sdhci_host *host, struct mmc_data *data)
+ 				start_addr &=
+ 				~(SDHCI_DEFAULT_BOUNDARY_SIZE - 1);
+ 				start_addr += SDHCI_DEFAULT_BOUNDARY_SIZE;
+-				sdhci_writel(host, phys_to_bus((ulong)start_addr),
++				sdhci_writel(host,
++					     mmc_phys_to_bus(host->mmc, (ulong)start_addr),
+ 					     SDHCI_DMA_ADDRESS);
+ 			}
+ 		}
+diff --git a/include/mmc.h b/include/mmc.h
+index 82562193cc..30a923d03d 100644
+--- a/include/mmc.h
++++ b/include/mmc.h
+@@ -938,4 +938,13 @@ static inline enum dma_data_direction mmc_get_dma_dir(struct mmc_data *data)
+ 	return data->flags & MMC_DATA_WRITE ? DMA_TO_DEVICE : DMA_FROM_DEVICE;
+ }
+ 
++static inline dma_addr_t mmc_phys_to_bus(struct mmc *mmc, phys_addr_t addr)
++{
++#if CONFIG_IS_ENABLED(DM_MMC)
++	return dev_phys_to_bus(mmc->dev, addr);
++#else
++	return phys_to_bus(addr);
++#endif
++}
++
+ #endif /* _MMC_H_ */
+-- 
+2.17.1
+
